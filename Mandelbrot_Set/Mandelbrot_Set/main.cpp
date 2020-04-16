@@ -4,8 +4,10 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include "cComplex.h"
 #include"shader_s.h"
 #include<iostream>
+#include<vector>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
@@ -25,6 +27,7 @@ struct vertices_array {
 
 vertices_array generate_vertices(int lenght);
 
+Complex function(Complex z, Complex c);
 
 int main()
 {
@@ -60,7 +63,6 @@ int main()
     }
 
 
-    // set up view
     glViewport(0, 0, 2000, 2000);
 
 
@@ -69,6 +71,7 @@ int main()
     unsigned int VBO, VAO, EBO;
 
     glEnable(GL_DEBUG_OUTPUT);
+    glEnable(GL_DEPTH_TEST);
 
 
     glGenVertexArrays(1, &VAO);
@@ -79,7 +82,7 @@ int main()
     glBindVertexArray(VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size, vertices.v_array, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size * sizeof(float), vertices.v_array, GL_STATIC_DRAW);
 
     /*glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices, GL_STATIC_DRAW);*/
@@ -99,30 +102,36 @@ int main()
     glm::mat4 model = glm::mat4(1.0f);
     glm::mat4 view = glm::mat4(1.0f);
     glm::mat4 projection = glm::mat4(1.0f);
-   /* model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    //view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-    projection = glm::ortho(0, 2000, 0, 2000);*/
+    view = glm::lookAt(glm::vec3(-2.0f, -3.0f, -2.0f), glm::vec3(-0.5f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+    projection = glm::ortho(-1.2f, 1.2f, -1.2f, 1.2f, 0.1f, 100.0f);
 
     shader.setMat4("projection", projection);
     shader.setMat4("view", view);
     shader.setMat4("model", model);
 
+    float old_time = 0, delta_time = 0, time = 0;
+
     while (!glfwWindowShouldClose(window)) {
 
-
-        float time = glfwGetTime();
+        time = glfwGetTime();
+        delta_time = time - old_time;
+        if (delta_time < 1 / 30) {
+            continue;
+        }
+        old_time = time;
+        
 
         processInput(window);
 
         glBindVertexArray(0);
 
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         shader.use();
 
         glBindVertexArray(VAO);
-        glDrawArrays(GL_POINTS, 0, 1000);
+        glDrawArrays(GL_POINTS, 0, vertices.size);
 
         glBindVertexArray(0);
 
@@ -142,49 +151,73 @@ int main()
 
 vertices_array generate_vertices(int lenght) {
 
+    int max_count = 1000;
+
+    //int size = mask_mandelbrot_set(lenght, max_count);
+
     int points = lenght + 1;
 
-    int p = points * 3 + points * 33;
+    std::vector<float> vertices;
 
-    float* p_a = new float[p];
+    //float* p_a = new float[size*3];
 
+    Complex z, c;
 
+    int count_points = 0;
+
+    float* last_z = new float[10];
+    float delta, delta_begin = 0, delta_end = 0;
 
     float* vertice;
     for (float i = 0; i <= lenght; i++) {
         for (float j = 0; j <= lenght; j++) {
+            c.real = 4 * i / lenght - 2;
+            c.imag = 4 * j / lenght - 2;
+            z = c;
+            for (int count = 0; z.mod2() <= 4.0f && count < max_count; count++) {
+                z = function(z, c);
 
-            vertice = p_a + (int)i * 3 + (int)j * 33;
+                *(last_z + count % 10) = z.real;
 
-            *vertice = (2*i / lenght - 1);
-            *(vertice + 1) = (2*j / lenght - 1);
-            *(vertice + 2) = 0.0f;
+                if (count == max_count-1) {
+                    delta = last_z[9] - last_z[0];
+                    for (int lz_i = 8; lz_i > 0; lz_i--) {
+                        if (last_z[lz_i] - last_z[0] < delta) {
+                            delta = last_z[lz_i] - last_z[0];
+                            delta_end = lz_i;
+                        }
+                    }
+
+
+                    for (int lz_i = 0; lz_i <= delta_end; lz_i++) {
+
+                        vertices.push_back(2 * i / lenght - 1);
+                        vertices.push_back(2 * j / lenght - 1);
+                        vertices.push_back(last_z[lz_i] / 5);
+
+                        /*vertice = p_a + count_points * 3;
+
+                        *vertice = (2 * i / lenght - 1);
+                        *(vertice + 1) = (2 * j / lenght - 1);
+                        *(vertice + 2) = last_z[lz_i] / 5;*/
+                        count_points++;
+                    }
+                }
+            }
         }
     }
 
-    return vertices_array{p_a, p};
+    float* p_a = new float[3 * count_points];
+
+    std::copy(vertices.begin(), vertices.end(), p_a);
+
+    return vertices_array{p_a, 3* count_points };
+}
+
+
+Complex function(Complex z, Complex c) {
+    return z * z + c;
 }
 
 
 
-/*void generate_indices(int g[600]) {
-
-    int* p_g = &g[0];
-
-    int* id;
-    for (int i = 0; i < 10; i++) {
-        for (int j = 0; j < 10; j++) {
-            id = (p_g + i * 6 + j * 10 * 6);
-            *id = i * 2 + j * 2 * 22;
-            *(id + 1) = (i) * 2 + 1 + (j * 2) * 22;
-            *(id + 2) = (i) * 2 + 1 + (j * 2 + 1) * 22;
-            *(id + 3) = (i) * 2 + 1 + (j * 2 + 1) * 22;
-            *(id + 4) = i * 2 + 0 + (j * 2 + 1) * 22;
-            *(id + 5) = i * 2 + 0 + (j * 2 * 22);
-        }
-    }
-
-
-
-    //0, 1, 11, 11, 10, 0, 10, 11, 21, 21, 20, 10 
-}*/
