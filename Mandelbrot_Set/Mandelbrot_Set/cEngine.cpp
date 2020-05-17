@@ -10,8 +10,12 @@
 
 
 
+
+
 Engine::Engine() {
 
+    rotation = 0;
+    v_rotation = 90;
 
     points_array vertices;
     generate_points(vertices, 1000, 0, 1);
@@ -25,7 +29,6 @@ Engine::Engine() {
 
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
-
 
     glBindVertexArray(VAO);
 
@@ -50,13 +53,14 @@ void Engine::init_shader() {
     glm::mat4 model = glm::mat4(1.0f);
     glm::mat4 view = glm::mat4(1.0f);
     glm::mat4 projection = glm::mat4(1.0f);
-    view = glm::lookAt(glm::vec3(-2.0f, -3.0f, -2.0f), glm::vec3(-0.5f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+    view = glm::lookAt(glm::vec3(2.0f, -3.0f, 2.0f), glm::vec3(-0.5f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
     projection = glm::ortho(-1.2f, 1.2f, -1.2f, 1.2f, 0.1f, 100.0f);
 
     s.setMat4("projection", projection);
     s.setMat4("view", view);
     s.setMat4("model", model);
     
+    v = &view;
     shader = &s;
 }
 
@@ -66,13 +70,22 @@ void Engine::update() {
 
 }
 
-void Engine::render() {
+void Engine::render(float delta_time) {
     glBindVertexArray(0);
 
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+
+
+    //*v = glm::mat4(1.0f);
+    *v = glm::lookAt(glm::vec3(3.0f * cos(glm::radians(rotation)), 3.0f * sin(glm::radians(rotation)), 2.0f * sin(glm::radians(v_rotation))), glm::vec3(-0.5f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+
+    
+
     shader->use();
+    
+    glUniformMatrix4fv(4, 1, GL_FALSE, (GLfloat*)v);
 
     glBindVertexArray(1);
     glDrawArrays(GL_POINTS, 0, size.at(0).size);
@@ -81,10 +94,53 @@ void Engine::render() {
 }
 
 
-void Engine::processInput(GLFWwindow* window)
+void Engine::processInput(GLFWwindow* window, float delta_time)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        if (rotation + 100 * delta_time >= 180)
+            rotation -= 360;
+        rotation += 100*delta_time;
+        b_rotation = true;
+    }
+    else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_RELEASE) {
+        b_rotation = false;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        if (rotation - 100 * delta_time <= 180)
+            rotation += 360;
+        rotation -= 100* delta_time;
+        b_rotation = true;
+    }
+    
+    else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_RELEASE) {
+        b_rotation = false;
+    }
+
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        if (v_rotation + 100 * delta_time >= 90)
+            v_rotation = 90;
+        else v_rotation += 100 * delta_time;
+        b_rotation = true;
+    }
+    else if (glfwGetKey(window, GLFW_KEY_W) == GLFW_RELEASE) {
+        b_rotation = false;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        if (v_rotation - 100 * delta_time <= -90)
+            v_rotation = -90;
+        else v_rotation -= 100 * delta_time;
+        b_rotation = true;
+    }
+    
+    else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_RELEASE) {
+        b_rotation = false;
+    }
 }
 
 void Engine::create_points(int& resolution, int& offset, int& step) {

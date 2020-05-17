@@ -56,9 +56,9 @@ int main()
         }
         old_time = time;
 
-        engine->processInput(window);
+        engine->processInput(window, delta_time);
 
-        engine->render();
+        engine->render(delta_time);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
