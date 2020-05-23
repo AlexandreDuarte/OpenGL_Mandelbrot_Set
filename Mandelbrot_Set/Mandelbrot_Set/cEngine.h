@@ -1,40 +1,43 @@
 #pragma once
 
 #include"shader_s.h"
-#include "cComplex.h"
 #include<vector>
+#include<complex>
 
 class Engine
 {
 public:
 	struct points_array {
 		float* p_array;
-		unsigned int size;
+		int size;
 	};
 	
+
 
 public:
 	Engine();
 	~Engine();
 
 public:
-	Shader* shader;
-	std::vector<points_array> size;
-	float rotation;
-	float v_rotation;
-	bool b_rotation;
+	unsigned int shaderID;
+	std::vector<unsigned int> size;
+	unsigned int MatricesUniformBufferID;
+	volatile float rotation;
+	volatile float v_rotation;
+	volatile bool b_rotation;
+	unsigned int VBO, VAO;
 	glm::mat4* v;
+	glm::mat4* p;
 
 public:
 	void init_shader();
 	void update();
-	void render(float);
+	void render(double*, float);
 
 public:
 	void create_points(int&, int&, int&);
-	void generate_points(Engine::points_array& ,int, int, int);
-	const Complex function(const Complex&, const Complex&);
-	void processInput(GLFWwindow* window, float);
+	void generate_points(Engine::points_array* ,int, int, int);
+	void processInput(GLFWwindow* window, double*);
 
 	Shader* getShader();
 

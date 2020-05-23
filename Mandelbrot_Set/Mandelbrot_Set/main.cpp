@@ -4,24 +4,36 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include "cComplex.h"
 #include "cEngine.h"
 #include"shader_s.h"
 #include<iostream>
 #include<vector>
+
+float zoom;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
 }
 
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    zoom += yoffset;
+}
+
 
 
 int main()
 {
-    GLFWwindow* window;
+    zoom = 0;
+    static GLFWwindow* window;
     if (!glfwInit())
         return -1;
+
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 4);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     window = glfwCreateWindow(2000, 2000, "Mandelbrot Set", NULL, NULL);
     if (!window) {
@@ -35,6 +47,8 @@ int main()
 
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
+    glfwSetScrollCallback(window, scroll_callback);
+
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
@@ -42,23 +56,28 @@ int main()
         return -1;
     }
 
+
     Engine* engine = new Engine();
     engine->init_shader();
 
-    float old_time = 0, delta_time = 0, time = 0;
+    static double old_time = 0.0, delta_time = 0.0, time = 0.0;
 
     while (!glfwWindowShouldClose(window)) {
 
         time = glfwGetTime();
         delta_time = time - old_time;
-        if (delta_time < 1 / 30) {
+
+        if (delta_time <= (double)1 / 120) {
             continue;
         }
+
+        
+
         old_time = time;
 
-        engine->processInput(window, delta_time);
+        engine->processInput(window, &delta_time);
 
-        engine->render(delta_time);
+        engine->render(&delta_time, zoom);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
