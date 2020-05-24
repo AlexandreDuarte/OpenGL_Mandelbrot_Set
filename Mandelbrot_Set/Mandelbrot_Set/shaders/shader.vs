@@ -1,16 +1,15 @@
-#version 330 core
+#version 460 core
 
 layout (std140) uniform MatrixBlock
 {
-  mat4 projection;
-  mat4 view;
+  dmat4 projection;
+  dmat4 view;
+  double zoom;
 };
 
 
-layout (location = 0) in vec3 vertex_position;
-
-uniform mat4 model; 
+layout (location = 0) in dvec3 vertex_position;
 
 void main() {
-	gl_Position = projection * view * model * vec4(vertex_position, 1.0);
+	gl_Position = vec4(projection * view * dvec4(vertex_position.x, vertex_position.y, vertex_position.z * zoom, 1));
 }
