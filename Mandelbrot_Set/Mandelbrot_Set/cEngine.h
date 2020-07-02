@@ -10,7 +10,7 @@ class Engine
 public:
 	struct points_array {
 		double* p_array;
-		int size;
+		size_t size;
 	};
 	
 

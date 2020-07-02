@@ -148,26 +148,26 @@ void Engine::create_points(int resolution, int offset, int step) {
         std::vector<double> points;
 
 
-        int count_points = 0;
+        size_t count_points = 0;
 
         double* last_z = new double[10];
         double delta;
         int delta_end = 0;
 
         double* vertice;
-        for (unsigned int i = offset; i <= resolution; i += step) {
-            for (unsigned int j = offset; j <= resolution; j += step) {
+        for (size_t i = offset; i <= resolution; i += step) {
+            for (size_t j = offset; j <= resolution; j += step) {
 
                 std::complex<double> c(4 * (double)i / (double)resolution - 2, 4 * (double)j / (double)resolution - 2);
                 std::complex<double> z = c;
-                for (unsigned int count = 0; abs(z._Val[0]) + abs(z._Val[1]) <= 4.0 && count < max_count; count++) {
+                for (size_t count = 0; abs(z._Val[0]) + abs(z._Val[1]) <= 4.0 && count < max_count; count++) {
                     z = z * z + c;
 
                     *(last_z + count % 10) = z._Val[0];
 
                     if (count == max_count - 1) {
                         delta = last_z[9] - last_z[0];
-                        for (int lz_i = 8; lz_i > 0; lz_i--) {
+                        for (size_t lz_i = 8; lz_i > 0; lz_i--) {
                             if (last_z[lz_i] - last_z[0] < delta) {
                                 delta = last_z[lz_i] - last_z[0];
                                 delta_end = lz_i;
@@ -175,11 +175,7 @@ void Engine::create_points(int resolution, int offset, int step) {
                         }
 
 
-                        for (unsigned int lz_i = 0; lz_i <= delta_end; lz_i++) {
-
-                            //glm::dvec3 p = glm::dvec3(2 * (double)i / (double)resolution - 1, 2 * (double)j / (double)resolution - 1, last_z[lz_i] / 5);
-
-                            
+                        for (size_t lz_i = 0; lz_i <= delta_end; lz_i++) {
 
                             points.push_back(2 * (double)i / (double)resolution - 1);
                             points.push_back(2 * (double)j / (double)resolution - 1);
