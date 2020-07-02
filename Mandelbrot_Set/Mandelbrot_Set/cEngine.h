@@ -36,7 +36,7 @@ public:
 	void render(double*, double);
 
 public:
-	void create_points(int, int, int);
+	void create_points(double, double, double);
 	//void generate_points(Engine::points_array* ,int, int, int);
 	void processInput(GLFWwindow* window, double*);
 };
