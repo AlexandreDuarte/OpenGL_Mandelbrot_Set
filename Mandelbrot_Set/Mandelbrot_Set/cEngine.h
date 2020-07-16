@@ -22,9 +22,9 @@ public:
 public:
 	Camera* camera;
 	bool parallel_finished;
-	volatile double rotation;
-	volatile double v_rotation;
-	volatile bool b_rotation;
+	double rotation;
+	double v_rotation;
+	bool b_rotation;
 	unsigned int VBO, VAO;
 	int active_draw;
 

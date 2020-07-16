@@ -66,7 +66,7 @@ void Engine::render(double* delta_time, double zoom) {
 
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-        glBufferData(GL_ARRAY_BUFFER, (*p_arrays.at(0)).size * sizeof(double), (*p_arrays.at(0)).p_array, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, (*p_arrays.at(p_arrays.size()-1)).size * sizeof(double), (*p_arrays.at(0)).p_array, GL_STATIC_DRAW);
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
         glVertexAttribLPointer(0, 3, GL_DOUBLE, 3 * sizeof(double), (void*)(0));
 
@@ -111,7 +111,7 @@ void Engine::create_points(double resolution, double offset, double step) {
         __m256i _max_count_minus_ten = _mm256_set1_epi64x(max_count - 10);
         __m256i _c;
 
-        double delta = std::numeric_limits<double>::max();
+        double delta;
         int delta_end = 0;
 
         int mask;
@@ -122,14 +122,11 @@ void Engine::create_points(double resolution, double offset, double step) {
         __m256d _cr;
         __m256d _ci;
 
-        __m256d _a;
-        __m256d _b;
-
         __m256d _zr2, _zi2, _zrzi;
 
         __m256d _lz;
 
-
+        //masks 
         __m256i _mask2 = _mm256_set1_epi64x(0xFFFFFFFFFFFFFFFF);
         __m256d _mask1 = _mm256_castsi256_pd(_mask2);
 
@@ -138,7 +135,8 @@ void Engine::create_points(double resolution, double offset, double step) {
         __m256d _i;
         __m256d _j;
 
-        __m256d* _last_z = new __m256d[8];
+        //last iterations array
+        __m256d* _last_z = new __m256d[10];
 
         int _llz;
 
@@ -202,7 +200,6 @@ void Engine::create_points(double resolution, double offset, double step) {
 
                     if (_mm256_movemask_pd(_mm256_castsi256_pd(_c_mask)) > 0) {
 
-
                         *(_last_z + _llz) = _zr;
 
                         _llz++;
@@ -215,8 +212,9 @@ void Engine::create_points(double resolution, double offset, double step) {
                 mask = _mm256_movemask_pd(_mask1);
 
                 //store values from 256 bit, 4 doubles
-                for (size_t lz_i = 0; lz_i < 9; lz_i++) {
+                for (size_t lz_i = 0; lz_i < 10; lz_i++) {
                     _mm256_store_pd(d + lz_i * 4, *(_last_z + lz_i));
+
                 }
 
                 //use m as a mask between the 4 bits in mask that represent _mask1 condition for the 4 doubles
