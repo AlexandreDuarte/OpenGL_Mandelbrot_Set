@@ -1,3 +1,3 @@
 # OpenGL_Mandelbrot_Set
 
-Mandelbrot visualizer in C++ and OpenGL
+Mandelbrot visualizer using C++ and OpenGL
