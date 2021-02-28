@@ -1,13 +1,13 @@
 
-#include<glad/glad.h>
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "cEngine.h"
-#include"shader_s.h"
-#include<iostream>
-#include<vector>
+#include "shader_s.h"
+#include <iostream>
+#include <vector>
 
 float zoom;
 

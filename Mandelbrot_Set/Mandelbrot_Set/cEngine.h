@@ -32,7 +32,6 @@ public:
 
 public:
 	void init_shader();
-	void update();
 	void render(double*, double);
 
 public:

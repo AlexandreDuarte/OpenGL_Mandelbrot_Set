@@ -1,6 +1,6 @@
 
-#include<future>
-#include<glad/glad.h>
+#include <future>
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -8,9 +8,6 @@
 #include "cEngine.h"
 #include <intrin.h>
 #include <limits>
-
-
-
 
 Engine::Engine() {
 
@@ -36,12 +33,6 @@ void Engine::init_shader() {
     Shader s("shaders/shader.vs", "shaders/shader.fs");
 
     camera = new Camera(s.ID, glm::dvec3(2.0, -2.0, 2.0), glm::dvec3(-0.5, 0.0, 0.0), 1.0);
-
-}
-
-void Engine::update() {
-
-    int reso = 1000, offs = 0, st = 1;
 
 }
 

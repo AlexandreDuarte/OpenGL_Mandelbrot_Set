@@ -1,7 +1,7 @@
 
 
 #include "camera.h"
-#include<glad/glad.h>
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 Camera::Camera(unsigned int shaderID, glm::dvec3 location, glm::dvec3 focus, double zoom) {
