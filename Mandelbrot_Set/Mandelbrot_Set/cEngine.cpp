@@ -8,6 +8,7 @@
 #include "cEngine.h"
 #include <intrin.h>
 #include <limits>
+#include <math.h>
 
 Engine::Engine() {
 
@@ -16,6 +17,8 @@ Engine::Engine() {
     v_rotation = 90;
     b_rotation = false;
     active_draw = -1;
+    x_offset = 0;
+    y_offset = 0;
 
     create_points(1000, 0, 1);
 
@@ -43,12 +46,11 @@ void Engine::render(double* delta_time, double zoom) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     //if (b_rotation)
-    camera->updateRotation(rotation, v_rotation);
+    camera->updateRotation(rotation, v_rotation, x_offset, y_offset);
 
     camera->updateZoom(zoom);
 
     if (parallel_finished) {
-        std::cout << parallel_finished << std::endl;
 
         glGenVertexArrays(1, &VAO);
         glGenBuffers(1, &VBO);
@@ -57,7 +59,7 @@ void Engine::render(double* delta_time, double zoom) {
 
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-        glBufferData(GL_ARRAY_BUFFER, (*p_arrays.at(p_arrays.size()-1)).size * sizeof(double), (*p_arrays.at(0)).p_array, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, p_arrays.size() * sizeof(double), p_arrays.data(), GL_STATIC_DRAW);
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
         glVertexAttribLPointer(0, 3, GL_DOUBLE, 3 * sizeof(double), (void*)(0));
 
@@ -72,23 +74,17 @@ void Engine::render(double* delta_time, double zoom) {
     if (active_draw != -1) {
         glBindVertexArray(VAO);
 
-        glDrawArrays(GL_POINTS, 0, p_arrays.at(active_draw)->size);
+        glDrawArrays(GL_POINTS, 0, p_arrays.size()/3);
 
         glBindVertexArray(0);
     }
 }
 
 void Engine::create_points(double resolution, double offset, double step) {
-    Engine::points_array* po_paralel = new points_array();
-
-    auto generate_points = [](bool* finished, Engine::points_array* output, double resolution, double offset, double step) {
-
-        std::vector<double> points;
 
 
-        size_t count_points = 0;
 
-        int64_t max_count = 1000;
+        int64_t max_count = 1500;
         __m256i _zero = _mm256_set1_epi64x(0);
         __m256d _four = _mm256_set1_pd(4.0);
         __m256d _two = _mm256_set1_pd(2.0);
@@ -99,7 +95,7 @@ void Engine::create_points(double resolution, double offset, double step) {
         __m256i _count;
         __m256i _lz_i;
         __m256i _max_count = _mm256_set1_epi64x(max_count);
-        __m256i _max_count_minus_ten = _mm256_set1_epi64x(max_count - 10);
+        __m256i _max_count_minus_ten = _mm256_set1_epi64x(max_count - 19);
         __m256i _c;
 
         double delta;
@@ -120,6 +116,7 @@ void Engine::create_points(double resolution, double offset, double step) {
         //masks 
         __m256i _mask2 = _mm256_set1_epi64x(0xFFFFFFFFFFFFFFFF);
         __m256d _mask1 = _mm256_castsi256_pd(_mask2);
+        __m256i _maskfinal = _mm256_set1_epi64x(0);
 
         __m256i _c_mask = _mask2;
 
@@ -127,11 +124,12 @@ void Engine::create_points(double resolution, double offset, double step) {
         __m256d _j;
 
         //last iterations array
-        __m256d* _last_z = new __m256d[10];
+        __m256d _last_z[20]{0};
 
         int _llz;
+        int m = 1;
 
-        double* d = new double[4 * 10];
+        double d[4 * 20]{0};
 
         for (double i = offset; i <= resolution; i += 4 * step) {
             _i = _mm256_set_pd(i + 3.0, i + 2.0, i + 1.0, i + 0.0);
@@ -152,6 +150,8 @@ void Engine::create_points(double resolution, double offset, double step) {
                 _zi = _ci;
 
                 _mask2 = _mm256_set1_epi64x(0xFFFFFFFFFFFFFFFF);
+
+                _maskfinal = _mm256_set1_epi64x(0);
 
                 _count = _zero;
 
@@ -191,79 +191,67 @@ void Engine::create_points(double resolution, double offset, double step) {
 
                     if (_mm256_movemask_pd(_mm256_castsi256_pd(_c_mask)) > 0) {
 
-                        *(_last_z + _llz) = _zr;
+                        _maskfinal = _mm256_or_si256(_maskfinal, _mm256_castpd_si256(_mask1));
+
+                        _last_z[_llz] = _zr;
 
                         _llz++;
                     }
                 }
 
                 //from 10 last iterations validate the different converging values
-
-                //_mask1: z^2 <= 4, to 4 bit int (normal int)
-                mask = _mm256_movemask_pd(_mask1);
-
-                //store values from 256 bit, 4 doubles
-                for (size_t lz_i = 0; lz_i < 10; lz_i++) {
-                    _mm256_store_pd(d + lz_i * 4, *(_last_z + lz_i));
-
+                for (size_t lz_i = 0; lz_i < 20; lz_i++) {
+                    _mm256_store_pd(&d[lz_i * 4], _last_z[lz_i]);
                 }
 
+                //_mask1: z^2 <= 4, to 4 bit int
+                mask = _mm256_movemask_pd(_mm256_castsi256_pd(_maskfinal));
+
+
                 //use m as a mask between the 4 bits in mask that represent _mask1 condition for the 4 doubles
-                int m = 1;
+                m = 0b1000;
+                if (mask == 0x0000) {
+                    continue;
+                }
                 for (size_t ii = 0; ii < 4; ii++) {
                     //cycle throw the 4 first bits in mask
-                    if ((mask & m) != m) {
-                        //shift to check next double condition
-                        m = m << 1;
+                    if (!((mask & m)>0)) {
+                        //shift to check next condition from double bundle
+                        m >>= 1;
                         continue;
                     }
-                    //shift to check next double condition
-                    m = m << 1;
+                    m >>= 1;
 
                     //search for periodic converging numbers and add them to points pool
-                    delta = std::numeric_limits<double>::max();
+                    delta = 1.0/200000;
                     delta_end = 0;
-                    size_t lz_i = 9;
+                    
                     //search for periodic
-                    for (; lz_i > 0; lz_i--) {
-                        if (*(d + ii + lz_i * 4) - *(d + ii) < delta) {
-                            delta = *(d + ii + lz_i * 4) - *(d + ii);
+                    for (size_t lz_i = 1; lz_i < 20; lz_i++) {
+                        if (d[ii + lz_i * 4] - d[ii] < delta) {
                             delta_end = lz_i;
                         }
                     }
                     //add to pool
-                    for (lz_i = 0; lz_i < delta_end; lz_i++) {
-                        points.push_back(2 * (i + (double)ii) / resolution - 1);
-                        points.push_back(2 * (double)(j) / resolution - 1);
-                        points.push_back(*(d + ii + lz_i * 4) / 5.0);
-                        count_points++;
+                    for (size_t lz_i = 0; lz_i < delta_end; lz_i++) {
+                        p_arrays.push_back(2 * (i + (double)ii) / resolution - 1);
+                        p_arrays.push_back(2 * (double)(j) / resolution - 1);
+                        p_arrays.push_back(d[ii + lz_i * 4] / 5.0);
                     }
+
                 }
+            
+
             }
         }
 
-        delete[] d;
-
-        delete[] _last_z;
-
-        double* p_a = new double[3 * count_points];
-
-        std::copy(points.begin(), points.end(), p_a);
-
-        *output = points_array{ p_a, 3 * count_points };
-        *finished = true;
-
-    };
-
-    p_arrays.push_back(po_paralel);
-
-    std::thread a(generate_points, &parallel_finished, std::ref(p_arrays.back()), resolution, offset, step);
-    a.detach();
+        parallel_finished = true;
 }
 
-void Engine::processInput(GLFWwindow* window, double* delta_time)
+void Engine::processInput(GLFWwindow* window, double* delta_time, double zoom)
 {
 
+    double z = exp(-zoom / 100);
 
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
@@ -308,6 +296,42 @@ void Engine::processInput(GLFWwindow* window, double* delta_time)
     }
 
     else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_RELEASE) {
+        b_rotation = false;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+        x_offset += 0.01*z;
+        b_rotation = true;
+    }
+    else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_RELEASE) {
+        b_rotation = false;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+
+        x_offset -= 0.01 * z;
+        b_rotation = true;
+    }
+
+    else if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_RELEASE) {
+        b_rotation = false;
+    }
+
+
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+        y_offset += 0.01 * z;
+        b_rotation = true;
+    }
+    else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_RELEASE) {
+        b_rotation = false;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+        y_offset -= 0.01 * z;
+        b_rotation = true;
+    }
+
+    else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_RELEASE) {
         b_rotation = false;
     }
 }

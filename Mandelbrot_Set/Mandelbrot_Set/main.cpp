@@ -75,7 +75,7 @@ int main()
 
         old_time = time;
 
-        engine->processInput(window, &delta_time);
+        engine->processInput(window, &delta_time, zoom);
 
         engine->render(&delta_time, zoom);
 

@@ -7,13 +7,6 @@
 
 class Engine
 {
-public:
-	struct points_array {
-		double* p_array;
-		size_t size;
-	};
-	
-
 
 public:
 	Engine();
@@ -24,11 +17,13 @@ public:
 	bool parallel_finished;
 	double rotation;
 	double v_rotation;
+	double x_offset;
+	double y_offset;
 	bool b_rotation;
 	unsigned int VBO, VAO;
 	int active_draw;
 
-	std::vector<Engine::points_array*> p_arrays;
+	std::vector<double> p_arrays;
 
 public:
 	void init_shader();
@@ -37,6 +32,6 @@ public:
 public:
 	void create_points(double, double, double);
 	//void generate_points(Engine::points_array* ,int, int, int);
-	void processInput(GLFWwindow* window, double*);
+	void processInput(GLFWwindow* window, double*, double);
 };
 

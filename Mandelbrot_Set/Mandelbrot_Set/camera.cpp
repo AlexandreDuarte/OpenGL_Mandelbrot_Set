@@ -45,7 +45,7 @@ Camera::Camera(unsigned int shaderID, glm::dvec3 location, glm::dvec3 focus, dou
 }
 
 
-void Camera::updateRotation(double rotation, double v_rotation) {
+void Camera::updateRotation(double rotation, double v_rotation, double xOffset, double yOffset) {
 
     glm::dvec3 r_transform = glm::dvec3(cos(glm::radians(rotation)), sin(glm::radians(rotation)), sin(glm::radians(v_rotation)));
 
@@ -53,7 +53,7 @@ void Camera::updateRotation(double rotation, double v_rotation) {
 
     //glm::mat4 view = glm::lookAt(glm::vec3((3.0f) * cos(glm::radians(rotation)), (3.0f) * sin(glm::radians(rotation)), 3.0f * sin(glm::radians(v_rotation))), glm::vec3(-0.5f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
 
-    glm::dmat4 view = glm::lookAt(n_location, focus, glm::dvec3(0.0, 0.0, -1.0));
+    glm::dmat4 view = glm::lookAt(n_location, focus + glm::dvec3(xOffset, yOffset, 0.0), glm::dvec3(0.0, 0.0, -1.0));
 
 
     glUseProgram(shaderID);

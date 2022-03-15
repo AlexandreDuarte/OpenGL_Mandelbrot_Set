@@ -15,7 +15,7 @@ public:
 	Camera(unsigned int, glm::dvec3, glm::dvec3, double);
 
 public:
-	void updateRotation(double, double);
+	void updateRotation(double, double, double, double);
 	void updateZoom(double);
 
 };
